@@ -1,22 +1,28 @@
-"""Extract lineage information from SAP HANA calculation views."""
-
-import json
+"""
+Calculation view lineage extractor for SAP HANA.
+"""
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from application_sdk.common.logger_adaptors import get_logger
-from app.scripts import utils
+from app.utils.sap_hana_utils import convert_to_list
 
 logger = get_logger(__name__)
 
 
 class CalcViewLineageExtractor:
-    """Extract lineage from calculation view data."""
-
+    """
+    Extracts lineage information from SAP HANA calculation views.
+    
+    This class parses the JSON representation of a calculation view
+    and extracts the lineage relationships between columns.
+    """
+    
     def __init__(self, json_data: Dict[str, Any]) -> None:
-        """Initialize the lineage extractor with calculation view JSON data.
-
+        """
+        Initialize the lineage extractor.
+        
         Args:
-            json_data: The parsed JSON data of the calculation view
+            json_data: JSON representation of a calculation view
         """
         self.__json_data: Dict[str, Any] = json_data
         self.__scenario: Dict[str, Any] = json_data["Calculation:scenario"]
@@ -37,13 +43,14 @@ class CalcViewLineageExtractor:
 
     @staticmethod
     def __normalize_mappings(raw: Union[Dict[str, Any], List[Any]]) -> List[Dict[str, Any]]:
-        """Normalize mappings to a list of dictionaries.
-
+        """
+        Normalize mapping data to a list of dictionaries.
+        
         Args:
-            raw: Raw mapping data that might be a dictionary or a list
-
+            raw: Raw mapping data
+            
         Returns:
-            List[Dict[str, Any]]: Normalized list of mapping dictionaries
+            List[Dict[str, Any]]: Normalized mapping data
         """
         if isinstance(raw, dict):
             return [raw]
@@ -54,11 +61,12 @@ class CalcViewLineageExtractor:
 
     @staticmethod
     def __extract_inputs(node_obj: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Extract input nodes from a calculation view node.
-
+        """
+        Extract input nodes from a calculation node.
+        
         Args:
-            node_obj: The calculation view node object
-
+            node_obj: Calculation node object
+            
         Returns:
             List[Dict[str, Any]]: List of input nodes
         """
@@ -74,13 +82,14 @@ class CalcViewLineageExtractor:
 
     @staticmethod
     def __build_data_sources(data_sources_section: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Dict[str, str]]:
-        """Build a map of data sources from the calculation view data.
-
+        """
+        Build a map of data sources.
+        
         Args:
-            data_sources_section: The data sources section from the calculation view data
-
+            data_sources_section: Data sources section of the calculation view
+            
         Returns:
-            Dict[str, Dict[str, str]]: A map of data source IDs to their properties
+            Dict[str, Dict[str, str]]: Map of data sources
         """
         ds_map: Dict[str, Dict[str, str]] = {}
         if isinstance(data_sources_section, dict):
@@ -97,9 +106,12 @@ class CalcViewLineageExtractor:
                 package_id: str = ""
             elif ds_type == "CALCULATION_VIEW":
                 table: str = ds["@id"]
-                schema: str = ds.get("columnObject", {}).get("@schemaName", "")
+                schema: str = ds["columnObject"]["@schemaName"]
                 source_type: str = ds_type
-                package_id: str = utils.extract_package_from_resourceuri(ds.get("resourceUri", ""))
+                package_id: str = ""
+                if "resourceUri" in ds:
+                    from app.utils.sap_hana_utils import extract_package_from_resourceuri
+                    package_id = extract_package_from_resourceuri(ds["resourceUri"])
             else:
                 schema = ""
                 table = ""
@@ -117,13 +129,14 @@ class CalcViewLineageExtractor:
 
     @staticmethod
     def __build_calc_nodes(calc_views_list: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Dict[str, Any]]:
-        """Build a map of calculation nodes from the calculation view data.
-
+        """
+        Build a map of calculation nodes.
+        
         Args:
             calc_views_list: List of calculation view nodes
-
+            
         Returns:
-            Dict[str, Dict[str, Any]]: A map of calculation node IDs to their data
+            Dict[str, Dict[str, Any]]: Map of calculation nodes
         """
         if isinstance(calc_views_list, dict):
             calc_views_list = [calc_views_list]
@@ -134,16 +147,23 @@ class CalcViewLineageExtractor:
         return calc_map
 
     @staticmethod
-    def __gather_final_columns(scenario: Dict[str, Any], calc_nodes_map: Dict[str, Dict[str, Any]]) -> Tuple[str, List[str], Dict[str, str], Set[str]]:
-        """Gather the final columns from the calculation view.
-
+    def __gather_final_columns(
+        scenario: Dict[str, Any], 
+        calc_nodes_map: Dict[str, Dict[str, Any]]
+    ) -> Tuple[str, List[str], Dict[str, str], Set[str]]:
+        """
+        Gather final columns from the logical model.
+        
         Args:
-            scenario: The calculation scenario data
+            scenario: Calculation scenario
             calc_nodes_map: Map of calculation nodes
-
+            
         Returns:
-            Tuple[str, List[str], Dict[str, str], Set[str]]: A tuple containing the final node ID, the final columns,
-                the column mappings, and the explicit columns
+            Tuple[str, List[str], Dict[str, str], Set[str]]: Tuple containing:
+                - Final node ID
+                - List of final columns
+                - Map of column mappings
+                - Set of explicitly defined columns
         """
         logical_model: Dict[str, Any] = scenario["logicalModel"]
         final_node_id: str = logical_model["@id"]
@@ -202,15 +222,16 @@ class CalcViewLineageExtractor:
         column_name: str,
         visited: Optional[Set[Tuple[str, str]]] = None,
     ) -> List[Dict[str, str]]:
-        """Get lineage information for a specific column in a node.
-
+        """
+        Get lineage for a column in a node.
+        
         Args:
-            node_id: ID of the calculation node
-            column_name: Name of the column
-            visited: Set of already visited node and column combinations to prevent infinite recursion
-
+            node_id: Node ID
+            column_name: Column name
+            visited: Set of visited node-column pairs
+            
         Returns:
-            List[Dict[str, str]]: List of source information dictionaries
+            List[Dict[str, str]]: List of source columns
         """
         if visited is None:
             visited = set()
@@ -235,11 +256,11 @@ class CalcViewLineageExtractor:
             return []
 
         node_obj: Dict[str, Any] = self.__calc_nodes_map[node_id]
-        results: List[Dict[str, str]] = []
         inputs: List[Dict[str, Any]] = self.__extract_inputs(node_obj)
+        results: List[Dict[str, str]] = []
 
         for inp in inputs:
-            upstream_node_id: str = inp.get("@node", "")
+            upstream_node_id: str = inp.get("@node")
             raw_mappings: Union[Dict[str, Any], List[Any]] = inp.get("mapping", [])
             mappings: List[Dict[str, Any]] = self.__normalize_mappings(raw_mappings)
             for m in mappings:
@@ -267,167 +288,30 @@ class CalcViewLineageExtractor:
 
         return results
 
-    def extract_lineage(self) -> List[Dict[str, str]]:
-        """Extract lineage information for all columns in the calculation view.
-
-        Returns:
-            List[Dict[str, str]]: List of column lineage information dictionaries
+    def extract_lineage(self) -> List[Dict[str, Any]]:
         """
-        all_lineage: List[Dict[str, str]] = []
-
-        # For each column in the final result, trace back its sources
-        for col in self.__final_columns:
-            # Get the internal column name using the mapping
-            internal_col = self.__column_mappings.get(col, col)
-            sources = self.__get_lineage(self.__final_node_id, internal_col)
-            
-            for source in sources:
-                lineage_item = {
-                    "calc_view_schema": source.get("calc_view_schema", ""),
-                    "calc_view_name": self.__scenario_name,
-                    "calc_view_column": col,
-                    "calc_view_package_id": source.get("calc_view_package_id", ""),
-                    "source_type": source.get("source_type", ""),
-                    "source_schema": source.get("source_table_schema", ""),
-                    "source_table": source.get("source_table", ""),
-                    "source_table_column": source.get("source_table_column", ""),
-                    "source_package_id": source.get("source_package_id", "")
-                }
-                all_lineage.append(lineage_item)
+        Extract lineage for all columns in the calculation view.
+        
+        Returns:
+            List[Dict[str, Any]]: List of column lineage mappings
+        """
+        result: List[Dict[str, Any]] = []
+        
+        for column_name in self.__final_columns:
+            if column_name not in self.__column_mappings:
+                logger.warning(f"Column {column_name} not found in mapping")
+                continue
                 
-        return all_lineage
-
-
-def extract_lineage_from_calculation_view(calc_view: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Extract lineage from a calculation view.
-
-    Args:
-        calc_view: Dictionary containing calculation view data with ROUTINE_DEFINITION
-            containing the calculation view definition as XML/JSON
-
-    Returns:
-        List[Dict[str, str]]: List of column lineage information dictionaries
-    """
-    routine_def = calc_view.get("ROUTINE_DEFINITION", "")
-    if not routine_def:
-        return []
-        
-    try:
-        # Parse the calculation view definition
-        parsed_data = json.loads(routine_def)
-        
-        # Add schema information to the parsed data
-        schema_name = calc_view.get("TABLE_SCHEM", "")
-        
-        # Extract lineage information
-        extractor = CalcViewLineageExtractor(parsed_data)
-        lineage_items = extractor.extract_lineage()
-        
-        # Add calculation view schema information to each lineage item
-        for item in lineage_items:
-            item["calc_view_schema"] = schema_name
-            item["calc_view_package_id"] = calc_view.get("PACKAGE_ID", "")
+            calculation_view_column = self.__column_mappings[column_name]
+            source_columns = self.__get_lineage(self.__final_node_id, calculation_view_column)
             
-        return lineage_items
-    except Exception as e:
-        logger.error(f"Error extracting lineage from calculation view: {e}")
-        return []
-
-
-def process_calculation_view_lineage(calc_views: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Process calculation view data to extract lineage information.
-    
-    Args:
-        calc_views: List of calculation view dictionaries with parsed data
-        
-    Returns:
-        List[Dict[str, Any]]: List of lineage process entities
-    """
-    lineage_processes = []
-    
-    for calc_view in calc_views:
-        # Skip if there's no routine definition
-        if not calc_view.get("ROUTINE_DEFINITION"):
-            continue
+            lineage_mapping = {
+                "target_column": column_name,
+                "calculation_view_column": calculation_view_column,
+                "source_columns": source_columns,
+                "is_explicit": column_name in self.__explicit_columns
+            }
             
-        # Get information about the calculation view
-        calc_view_name = calc_view.get("VIEW_NAME", "")
-        schema_name = calc_view.get("TABLE_SCHEM", "")
-        package_id = calc_view.get("PACKAGE_ID", "")
-        
-        try:
-            # Parse the calculation view definition if it's a string
-            parsed_data = None
-            routine_def = calc_view.get("ROUTINE_DEFINITION")
-            if isinstance(routine_def, str):
-                parsed_data = json.loads(routine_def)
-            else:
-                parsed_data = routine_def
-                
-            # Add parsed data to the calculation view
-            calc_view["PARSED_DATA"] = parsed_data
+            result.append(lineage_mapping)
             
-            # Extract source tables and views used in this calculation view
-            sources = []
-            if parsed_data and "Calculation:scenario" in parsed_data:
-                scenario = parsed_data["Calculation:scenario"]
-                if "dataSources" in scenario and "DataSource" in scenario["dataSources"]:
-                    data_sources = utils.convert_to_list(scenario["dataSources"]["DataSource"])
-                    for ds in data_sources:
-                        ds_type = ds.get("@type", "").upper()
-                        if ds_type in ["DATA_BASE_TABLE", "DATA_BASE_VIEW", "CALCULATION_VIEW"]:
-                            source_schema = ds.get("columnObject", {}).get("@schemaName", "")
-                            source_name = ""
-                            
-                            if ds_type == "CALCULATION_VIEW":
-                                source_name = ds.get("@id", "")
-                                source_package_id = utils.extract_package_from_resourceuri(ds.get("resourceUri", ""))
-                                source_full_name = f"{source_schema}.{source_package_id}.{source_name}"
-                            else:
-                                source_name = ds.get("columnObject", {}).get("@columnObjectName", "")
-                                source_package_id = ""
-                                source_full_name = f"{source_schema}.{source_name}"
-                                
-                            sources.append({
-                                "SOURCE_NAME": source_full_name,
-                                "SOURCE_TABLE_TYPE": ds_type
-                            })
-            
-            # Create a lineage process entity if there are sources
-            if sources:
-                # Unique target calculation view identifier: schema.package_id.view_name
-                target_calc_view = f"{schema_name}.{package_id}.{calc_view_name}"
-                
-                # Format inputs for the transformer
-                inputs_json = []
-                for source in sources:
-                    source_type = source["SOURCE_TABLE_TYPE"]
-                    if source_type == "DATA_BASE_TABLE":
-                        entity_type = "Table"
-                    elif source_type == "DATA_BASE_VIEW":
-                        entity_type = "View"
-                    else:
-                        entity_type = "CalculationView"
-                        
-                    inputs_json.append({
-                        "typeName": entity_type,
-                        "uniqueAttributes": {
-                            "qualifiedName": source["SOURCE_NAME"]
-                        }
-                    })
-                
-                # Create lineage process entity
-                lineage_process = {
-                    "TARGET_CALC_VIEW": target_calc_view,
-                    "TARGET_CALC_VIEW_NAME": calc_view_name,
-                    "SOURCES": sources,
-                    "SOURCE_JOIN": ", ".join([s["SOURCE_NAME"] for s in sources]),
-                    "INPUTS": json.dumps(inputs_json)
-                }
-                
-                lineage_processes.append(lineage_process)
-        
-        except Exception as e:
-            logger.error(f"Error processing lineage for calculation view {calc_view_name}: {e}")
-    
-    return lineage_processes 
+        return result 

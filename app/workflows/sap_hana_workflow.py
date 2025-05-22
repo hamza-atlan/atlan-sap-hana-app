@@ -1,33 +1,39 @@
+"""
+SAP HANA metadata extraction workflow.
+"""
 from typing import Any, Callable, List, Sequence
+
 from temporalio import workflow
 
 from application_sdk.workflows.metadata_extraction.sql import BaseSQLMetadataExtractionWorkflow
-from app.activities import SAPHANAMetadataExtractionActivities
+from app.activities.sap_hana_activities import SAPHANAExtractionActivities
 
 @workflow.defn
-class SAPHANAMetadataExtractionWorkflow(BaseSQLMetadataExtractionWorkflow):
-    """Custom workflow that extends the base SQL extraction with SAP HANA specific activities.
+class SAPHANAExtractionWorkflow(BaseSQLMetadataExtractionWorkflow):
+    """
+    SAP HANA metadata extraction workflow.
     
-    This workflow adds SAP HANA calculation view extraction and processing steps to the
-    standard SQL metadata extraction sequence.
+    This workflow extends the base SQL metadata extraction workflow to add
+    SAP HANA specific activities for calculation views.
     """
     
     # Specify the activities class to use
-    activities_cls = SAPHANAMetadataExtractionActivities
+    activities_cls = SAPHANAExtractionActivities
     
     @staticmethod
     def get_activities(
-        activities: SAPHANAMetadataExtractionActivities,
+        activities: SAPHANAExtractionActivities,
     ) -> Sequence[Callable[..., Any]]:
-        """Define the sequence of activities to execute.
+        """
+        Define the sequence of activities to execute.
         
         Args:
-            activities: An instance of the activities class
+            activities: An instance of the SAP HANA activities class
             
         Returns:
             Sequence of activity methods to execute
         """
-        # Start with the base activities
+        # Start with standard extraction activities
         standard_activities = [
             activities.preflight_check,
             activities.fetch_databases,
@@ -35,16 +41,14 @@ class SAPHANAMetadataExtractionWorkflow(BaseSQLMetadataExtractionWorkflow):
             activities.fetch_tables,
             activities.fetch_views,
             activities.fetch_columns,
-            activities.fetch_procedures,
+            activities.fetch_procedures
         ]
         
         # Add SAP HANA specific activities
         sap_hana_activities = [
-            activities.fetch_calculation_views,
-            activities.fetch_calculation_view_columns,
-            activities.process_calculation_views,
-            activities.process_calculation_view_lineage,
-            activities.process_calculation_view_column_lineage,
+            activities.fetch_calc_views,
+            activities.fetch_calc_view_columns,
+            activities.process_calc_view_lineage
         ]
         
         # End with transform activity
@@ -55,11 +59,9 @@ class SAPHANAMetadataExtractionWorkflow(BaseSQLMetadataExtractionWorkflow):
         # Return the complete sequence
         return standard_activities + sap_hana_activities + transform_activity
     
-    def get_fetch_functions(self) -> List[Callable[..., Any]]:
-        """Define the sequence of fetch functions to execute.
-        
-        This method determines which activities participate in the
-        chunking and throttling mechanism of the workflow.
+    def get_fetch_functions(self) -> List[Callable]:
+        """
+        Define the fetch functions to use for chunking.
         
         Returns:
             List of fetch activity functions
@@ -69,9 +71,9 @@ class SAPHANAMetadataExtractionWorkflow(BaseSQLMetadataExtractionWorkflow):
         
         # Add SAP HANA specific fetch functions
         sap_hana_fetch_functions = [
-            self.activities_cls.fetch_calculation_views,
-            self.activities_cls.fetch_calculation_view_columns,
+            self.activities_cls.fetch_calc_views,
+            self.activities_cls.fetch_calc_view_columns
         ]
         
-        # Return the combined list
+        # Return combined list
         return base_fetch_functions + sap_hana_fetch_functions 

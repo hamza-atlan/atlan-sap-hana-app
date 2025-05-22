@@ -1,64 +1,72 @@
+"""
+SAP HANA client for database connections.
+"""
+from typing import Dict, Any
+
 from application_sdk.clients.sql import BaseSQLClient
 from application_sdk.common.logger_adaptors import get_logger
 
 logger = get_logger(__name__)
 
 class SAPHANAClient(BaseSQLClient):
-    """Custom SQL client for SAP HANA database connections."""
+    """
+    SAP HANA client for database connections.
     
-    # Define connection string template and requirements for SAP HANA
+    This client handles the connection to SAP HANA databases using the
+    appropriate connection string format and authentication method.
+    """
+    
+    # Define connection string template and requirements
     DB_CONFIG = {
-        "template": "hana://{username}:{password}@{host}:{port}",
+        "template": "hana+hdbcli://{username}:{password}@{host}:{port}",
         "required": ["username", "password", "host", "port"],
         "defaults": {
             "encrypt": "true",
-            "sslValidateCertificate": "false"
+            "sslValidateCertificate": "false",
+            "connect_timeout": 30,
         },
     }
     
-    async def get_connection_string(self, credentials):
-        """Generate connection string for SAP HANA.
+    async def get_connection_string(self, credentials: Dict[str, Any]) -> str:
+        """
+        Generate a connection string for SAP HANA.
         
         Args:
             credentials: Dictionary containing connection credentials
             
         Returns:
-            str: Connection string for SAP HANA
+            Connection string for SAP HANA
         """
-        auth_type = credentials.get("authType", "basic")
+        logger.info("Building SAP HANA connection string")
         
-        # Basic username/password authentication
-        if auth_type == "basic":
-            # Verify required fields
-            for field in self.DB_CONFIG["required"]:
-                if field not in credentials:
-                    raise ValueError(f"Missing required field for SAP HANA connection: {field}")
-            
-            # Build connection string with parameters
-            connection_params = {**credentials}
-            
-            # Add SSL parameters if specified
-            if credentials.get("encrypt", "true").lower() == "true":
-                connection_params["encrypt"] = "true"
-                connection_params["sslValidateCertificate"] = credentials.get(
-                    "sslValidateCertificate", "false"
-                )
-            
-            # Format the template with provided parameters
-            template = self.DB_CONFIG["template"]
-            connection_string = template.format(**connection_params)
-            
-            # Add query parameters
-            query_params = []
-            for param, value in self.DB_CONFIG["defaults"].items():
-                if param not in connection_params:
-                    query_params.append(f"{param}={value}")
-            
-            if query_params:
-                connection_string += "?" + "&".join(query_params)
-            
-            logger.debug(f"Generated SAP HANA connection string (credentials masked)")
-            return connection_string
+        # Validate required credentials
+        for field in self.DB_CONFIG["required"]:
+            if field not in credentials or not credentials[field]:
+                raise ValueError(f"Missing required credential: {field}")
         
-        else:
-            raise ValueError(f"Unsupported authentication type for SAP HANA: {auth_type}") 
+        # Build connection string from template
+        connection_string = self.DB_CONFIG["template"].format(
+            username=credentials["username"],
+            password=credentials["password"],
+            host=credentials["host"],
+            port=credentials["port"]
+        )
+        
+        # Add optional parameters if provided or use defaults
+        query_params = []
+        
+        # Add defaults
+        for key, value in self.DB_CONFIG.get("defaults", {}).items():
+            if key not in credentials:
+                query_params.append(f"{key}={value}")
+        
+        # Add any additional parameters from credentials
+        for key, value in credentials.items():
+            if key not in self.DB_CONFIG["required"] and key not in ["username", "password", "host", "port", "authType"]:
+                query_params.append(f"{key}={value}")
+        
+        # Add query parameters to connection string
+        if query_params:
+            connection_string = f"{connection_string}?{'&'.join(query_params)}"
+        
+        return connection_string 

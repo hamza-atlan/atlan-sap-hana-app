@@ -1,3 +1,3 @@
-from app.activities.sap_hana_extraction import SAPHANAMetadataExtractionActivities
-
-__all__ = ["SAPHANAMetadataExtractionActivities"] 
+"""
+Activities module for SAP HANA connector.
+""" 

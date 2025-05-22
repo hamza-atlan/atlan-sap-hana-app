@@ -1,27 +1,33 @@
-name: "sap-hana-extraction"
+name: "sap-hana-connector"
 version: "1.0.0"
-display_name: "SAP HANA Extractor"
-description: "Extract metadata from SAP HANA databases including tables, views, calculation views and lineage"
+display_name: "SAP HANA Metadata Extractor"
+description: "Extract metadata from SAP HANA databases including tables, views, and calculation views"
 
 database:
   type: "sap-hana"
   min_version: "2.0"
-  package: "hdbcli>=2.16.26"
+  package: "hdbcli>=2.18.27"
 
 authentication:
   - type: "basic"
     display_name: "Username/Password"
     required_fields:
       - name: "host"
-        type: "string" 
+        type: "string"
       - name: "port"
         type: "integer"
-        default: 443
+        default: 30015
       - name: "username"
         type: "string"
       - name: "password"
         type: "string"
         secret: true
+      - name: "encrypt"
+        type: "boolean"
+        default: true
+      - name: "sslValidateCertificate"
+        type: "boolean"
+        default: false
 
 activities:
   standard:
@@ -29,45 +35,28 @@ activities:
       sql_file: "app/sql/extract_database.sql"
     - name: "fetch_schemas"
       sql_file: "app/sql/extract_schema.sql"
-      exclude_pattern: "['^SYS_.*', '^_SYS_.*', '^SAP_.*', '^_SAP_.*', '^PAL_.*', '^FDT_.*', '^XSSQLCC_AUTO_USER_.*', '^SYS$', '^SYSTEM$', 'BROKER_USER', 'BROKER_PO_USER', 'HANA_XS_BASE', 'UIS', 'PUBLIC', 'SAPHANADB', 'DBACOCKPIT', 'SAPDBCTRL']"
     - name: "fetch_tables"
       sql_file: "app/sql/extract_table.sql"
-      exclude_pattern: "['^SYS_.*', '^_SYS_.*', '^SAP_.*', '^_SAP_.*', '^PAL_.*', '^FDT_.*', '^XSSQLCC_AUTO_USER_.*', '^SYS$', '^SYSTEM$', 'BROKER_USER', 'BROKER_PO_USER', 'HANA_XS_BASE', 'UIS', 'PUBLIC']"
     - name: "fetch_views"
       sql_file: "app/sql/extract_view.sql"
-      exclude_pattern: "['^SYS_.*', '^_SYS_.*', '^SAP_.*', '^_SAP_.*', '^PAL_.*', '^FDT_.*', '^XSSQLCC_AUTO_USER_.*', '^SYS$', '^SYSTEM$', 'BROKER_USER', 'BROKER_PO_USER', 'HANA_XS_BASE', 'UIS', 'PUBLIC']"
     - name: "fetch_columns"
       sql_file: "app/sql/extract_column.sql"
-      exclude_pattern: "['^SYS_.*', '^_SYS_.*', '^SAP_.*', '^_SAP_.*', '^PAL_.*', '^FDT_.*', '^XSSQLCC_AUTO_USER_.*', '^SYS$', '^SYSTEM$', 'BROKER_USER', 'BROKER_PO_USER', 'HANA_XS_BASE', 'UIS', 'PUBLIC']"
     - name: "fetch_procedures"
       sql_file: "app/sql/extract_procedure.sql"
-      exclude_pattern: "['^SYS_.*', '^_SYS_.*', '^SAP_.*', '^_SAP_.*', '^PAL_.*', '^FDT_.*', '^XSSQLCC_AUTO_USER_.*', '^SYS$', '^SYSTEM$', 'BROKER_USER', 'BROKER_PO_USER', 'HANA_XS_BASE', 'UIS', 'PUBLIC']"
   
   custom:
-    - name: "fetch_calculation_views"
-      sql_file: "app/sql/extract_calculation_view.sql"
+    - name: "fetch_calc_views"
+      sql_file: "app/sql/extract_calc_view.sql"
       description: "Extracts SAP HANA calculation views"
-    - name: "fetch_calculation_view_columns"
-      sql_file: "app/sql/extract_calculation_view_column.sql"
+    - name: "fetch_calc_view_columns"
+      sql_file: "app/sql/extract_calc_view_column.sql"
       description: "Extracts SAP HANA calculation view columns"
-    - name: "process_calculation_views"
-      description: "Processes SAP HANA calculation views to extract lineage"
-      input_assets: ["calculation_view"]
-      output_asset: "calculation_view_processed"
-      script_dependencies:
-        - "app/scripts/process_calculation_view.py"
-    - name: "process_calculation_view_lineage"
-      description: "Processes lineage from SAP HANA calculation views"
-      input_assets: ["calculation_view_processed", "table", "view"]
+    - name: "process_calc_view_lineage"
+      description: "Processes lineage from calculation views"
+      input_assets: ["calc_view"]
       output_asset: "calc_view_lineage"
       script_dependencies:
-        - "app/scripts/parse_calc_view_lineage.py"
-    - name: "process_calculation_view_column_lineage"
-      description: "Processes column-level lineage from SAP HANA calculation views"
-      input_assets: ["calculation_view_processed", "column", "calculation_view_column"]
-      output_asset: "calc_view_column_lineage"
-      script_dependencies:
-        - "app/scripts/parse_calc_view_column_lineage.py"
+        - "app/scripts/process_calc_view_lineage.py"
 
 transformers:
   templates:
@@ -84,13 +73,13 @@ transformers:
     - name: "PROCEDURE"
       template_file: "app/transformers/templates/procedure.yaml"
     - name: "CALCULATION-VIEW"
-      template_file: "app/transformers/templates/calculation_view.yaml"
+      template_file: "app/transformers/templates/calculation-view.yaml"
     - name: "CALCULATION-VIEW-COLUMN"
-      template_file: "app/transformers/templates/calculation_view_column.yaml"
-    - name: "CALC-VIEW-LINEAGE"
-      template_file: "app/transformers/templates/calc_view_lineage.yaml"
-    - name: "CALC-VIEW-COLUMN-LINEAGE"
-      template_file: "app/transformers/templates/calc_view_column_lineage.yaml"
+      template_file: "app/transformers/templates/calculation-view-column.yaml"
+    - name: "LINEAGE"
+      template_file: "app/transformers/templates/lineage.yaml"
+    - name: "COLUMN-LINEAGE"
+      template_file: "app/transformers/templates/column-lineage.yaml"
 
 workflow:
   sequence:
@@ -101,9 +90,7 @@ workflow:
     - "fetch_views"
     - "fetch_columns"
     - "fetch_procedures"
-    - "fetch_calculation_views"
-    - "fetch_calculation_view_columns"
-    - "process_calculation_views"
-    - "process_calculation_view_lineage"
-    - "process_calculation_view_column_lineage"
+    - "fetch_calc_views"
+    - "fetch_calc_view_columns"
+    - "process_calc_view_lineage"
     - "transform_data" 

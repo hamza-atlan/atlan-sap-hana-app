@@ -1,0 +1,30 @@
+SELECT
+    AO.OBJECT_NAME AS VIEW_NAME,
+    AO.PACKAGE_ID,
+    AO.OBJECT_SUFFIX,
+    AO.CREATED_BY,
+    AO.SCHEMA_NAME AS TABLE_SCHEM,
+    AO.CREATED_AT AS CREATE_TIME,
+    'CALCULATION_VIEW' AS TABLE_TYPE,
+    AO.OBJECT_METADATA AS REMARKS,
+    LAI.CONTENT AS ROUTINE_DEFINITION,
+    'DEFAULT' AS TABLE_CAT
+FROM
+    _SYS_REPO.ACTIVE_OBJECT AO
+JOIN
+    _SYS_REPO.LANGUAGES_ACTIVE_CONTENT LAI
+    ON AO.CDATA = LAI.CDATA
+WHERE
+    AO.OBJECT_SUFFIX = 'calculationview'
+    AND AO.SCHEMA_NAME NOT IN (
+        'SYSTEM',
+        'SYS',
+        'SYSHDL',
+        'BROKER_PO_USER',
+        'BROKER_USER',
+        'HANA_XS_BASE',
+        'UIS',
+        'PUBLIC'
+    )
+    AND concat('DEFAULT', concat('.', AO.SCHEMA_NAME)) !~ '{normalized_exclude_regex}'
+    AND concat('DEFAULT', concat('.', AO.SCHEMA_NAME)) ~ '{normalized_include_regex}'; 
