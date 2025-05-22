@@ -1,0 +1,25 @@
+columns:
+  - name: typeName
+    source_query: "'Database'"
+
+  - name: attributes.name
+    source_query: DATABASE_NAME
+    
+  - name: attributes.qualifiedName
+    source_query: concat(connection_qualified_name, '/', DATABASE_NAME)
+    source_columns: [connection_qualified_name, DATABASE_NAME]
+    
+  - name: attributes.connectorName
+    source_query: "'sap-hana'"
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.status
+    source_query: STATUS
+    
+  - name: attributes.databaseName
+    source_query: DATABASE_NAME
+    
+  - name: attributes.owner
+    source_query: OWNER 

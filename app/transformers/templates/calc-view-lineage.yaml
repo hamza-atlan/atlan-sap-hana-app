@@ -1,0 +1,27 @@
+columns:
+  - name: typeName
+    source_query: "'Process'"
+
+  - name: attributes.name
+    source_query: concat(SOURCE_JOIN, ' -> ', TARGET_CALC_VIEW_NAME)
+    source_columns: [SOURCE_JOIN, TARGET_CALC_VIEW_NAME]
+    
+  - name: attributes.qualifiedName
+    source_query: concat(connection_qualified_name, '/', TARGET_CALC_VIEW)
+    source_columns: [connection_qualified_name, TARGET_CALC_VIEW]
+    
+  - name: attributes.connectorName
+    source_query: "'sap-hana'"
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.outputs
+    source_query: concat('[{"typeName":"CalculationView","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TARGET_CALC_VIEW, '"}}]')
+    source_columns: [connection_qualified_name, TARGET_CALC_VIEW]
+    
+  - name: attributes.inputs
+    source_query: INPUTS
+    
+  - name: attributes.processType
+    source_query: "'CALCULATION_VIEW'" 

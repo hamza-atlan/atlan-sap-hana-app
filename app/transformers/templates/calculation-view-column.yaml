@@ -1,0 +1,33 @@
+columns:
+  - name: typeName
+    source_query: "'Column'"
+
+  - name: attributes.name
+    source_query: COLUMN_NAME
+    
+  - name: attributes.qualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', VIEW_NAME, '/', COLUMN_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, VIEW_NAME, COLUMN_NAME]
+    
+  - name: attributes.connectorName
+    source_query: "'sap-hana'"
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.dataType
+    source_query: COLUMN_SQL_TYPE
+    
+  - name: attributes.position
+    source_query: "0"
+    
+  - name: attributes.calculationViewName
+    source_query: VIEW_NAME
+    
+  - name: attributes.calculationViewQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', VIEW_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, VIEW_NAME]
+    
+  - name: attributes.calculationView
+    source_query: concat('{"typeName":"CalculationView","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', VIEW_NAME, '"}}')
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, VIEW_NAME] 

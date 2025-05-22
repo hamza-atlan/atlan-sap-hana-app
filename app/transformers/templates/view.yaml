@@ -1,0 +1,45 @@
+columns:
+  - name: typeName
+    source_query: "'View'"
+
+  - name: attributes.name
+    source_query: TABLE_NAME
+    
+  - name: attributes.qualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
+    
+  - name: attributes.connectorName
+    source_query: "'sap-hana'"
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
+    source_columns: [connection_qualified_name, TABLE_CAT]
+    
+  - name: attributes.schemaQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM]
+    
+  - name: attributes.databaseName
+    source_query: TABLE_CAT
+    
+  - name: attributes.schemaName
+    source_query: TABLE_SCHEM
+    
+  - name: attributes.description
+    source_query: REMARKS
+    
+  - name: attributes.viewType
+    source_query: "'Regular'"
+    
+  - name: attributes.definition
+    source_query: case when VIEW_DEFINITION is null then null else concat('CREATE OR REPLACE VIEW ', TABLE_NAME, ' AS ', VIEW_DEFINITION) end
+    source_columns: [VIEW_DEFINITION, TABLE_NAME]
+    
+  - name: attributes.createTime
+    source_query: CREATE_TIME
+    source_columns: [CREATE_TIME]
+    null_values: ['null'] 

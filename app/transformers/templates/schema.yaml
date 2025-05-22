@@ -1,0 +1,36 @@
+columns:
+  - name: typeName
+    source_query: "'Schema'"
+
+  - name: attributes.name
+    source_query: TABLE_SCHEM
+    
+  - name: attributes.qualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM]
+    
+  - name: attributes.connectorName
+    source_query: "'sap-hana'"
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
+    source_columns: [connection_qualified_name, TABLE_CAT]
+    
+  - name: attributes.databaseName
+    source_query: TABLE_CAT
+    
+  - name: attributes.schemaName
+    source_query: TABLE_SCHEM
+    
+  - name: attributes.schemaType
+    source_query: TABLE_TYPE
+    
+  - name: attributes.owner
+    source_query: OWNER
+    
+  - name: attributes.database
+    source_query: concat('{"typeName":"Database","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '"}}')
+    source_columns: [connection_qualified_name, TABLE_CAT] 
