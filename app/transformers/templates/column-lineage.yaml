@@ -1,0 +1,24 @@
+columns:
+  - name: typeName
+    source_query: "'ColumnProcess'"
+    
+  - name: attributes.name
+    source_query: COLUMN_PROCESS_NAME
+    
+  - name: attributes.qualifiedName
+    source_query: COLUMN_PROCESS_QUALIFIED_NAME
+    
+  - name: attributes.description
+    source_query: COLUMN_PROCESS_DESCRIPTION
+    
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
+    
+  - name: attributes.processQualifiedName
+    source_query: PROCESS_QUALIFIED_NAME
+    
+  - name: attributes.inputs
+    source_query: SOURCE_COLUMN_ENTITIES
+    
+  - name: attributes.outputs
+    source_query: TARGET_COLUMN_ENTITIES 

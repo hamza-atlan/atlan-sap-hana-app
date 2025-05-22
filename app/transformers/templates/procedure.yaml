@@ -1,7 +1,7 @@
 columns:
   - name: typeName
     source_query: "'StoredProcedure'"
-
+    
   - name: attributes.name
     source_query: PROCEDURE_NAME
     
@@ -9,15 +9,32 @@ columns:
     source_query: concat(connection_qualified_name, '/', PROCEDURE_CAT, '/', PROCEDURE_SCHEM, '/', PROCEDURE_NAME)
     source_columns: [connection_qualified_name, PROCEDURE_CAT, PROCEDURE_SCHEM, PROCEDURE_NAME]
     
-  - name: attributes.connectorName
-    source_query: "'sap-hana'"
+  - name: attributes.description
+    source_query: REMARKS
     
-  - name: attributes.connectionQualifiedName
-    source_query: connection_qualified_name
+  - name: attributes.owner
+    source_query: PROCEDURE_SCHEM
     
-  - name: attributes.databaseQualifiedName
-    source_query: concat(connection_qualified_name, '/', PROCEDURE_CAT)
-    source_columns: [connection_qualified_name, PROCEDURE_CAT]
+  - name: attributes.procedureType
+    source_query: PROCEDURE_TYPE
+    
+  - name: attributes.definition
+    source_query: PROCEDURE_DEFINITION
+    
+  - name: attributes.procedureId
+    source_query: PROCEDURE_OID
+    
+  - name: attributes.isValid
+    source_query: IS_VALID
+    
+  - name: attributes.isBuiltin
+    source_query: IS_BUILTIN
+    
+  - name: attributes.createTime
+    source_query: CREATE_TIME
+    
+  - name: attributes.schemaName
+    source_query: PROCEDURE_SCHEM
     
   - name: attributes.schemaQualifiedName
     source_query: concat(connection_qualified_name, '/', PROCEDURE_CAT, '/', PROCEDURE_SCHEM)
@@ -26,15 +43,9 @@ columns:
   - name: attributes.databaseName
     source_query: PROCEDURE_CAT
     
-  - name: attributes.schemaName
-    source_query: PROCEDURE_SCHEM
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', PROCEDURE_CAT)
+    source_columns: [connection_qualified_name, PROCEDURE_CAT]
     
-  - name: attributes.schema
-    source_query: concat('{"typeName":"Schema","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', PROCEDURE_CAT, '/', PROCEDURE_SCHEM, '"}}')
-    source_columns: [connection_qualified_name, PROCEDURE_CAT, PROCEDURE_SCHEM]
-    
-  - name: attributes.procedureType
-    source_query: PROCEDURE_TYPE
-    
-  - name: attributes.definition
-    source_query: ROUTINE_DEFINITION 
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name 

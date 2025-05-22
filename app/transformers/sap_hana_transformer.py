@@ -1,18 +1,27 @@
+"""
+SAP HANA transformer for metadata transformation.
+"""
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import daft
 from application_sdk.transformers.query import QueryBasedTransformer
 from application_sdk.transformers.common.utils import get_yaml_query_template_path_mappings
 from application_sdk.common.logger_adaptors import get_logger
 
 logger = get_logger(__name__)
 
+
 class SAPHANATransformer(QueryBasedTransformer):
-    """Custom transformer that adds support for SAP HANA specific entity types."""
+    """
+    SAP HANA transformer for metadata transformation.
+    
+    This transformer handles conversion of extracted SAP HANA metadata
+    into standardized formats using YAML templates.
+    """
     
     def __init__(self, connector_name: str, tenant_id: str, **kwargs: Any):
-        """Initialize the transformer with SAP HANA specific templates.
+        """
+        Initialize the SAP HANA transformer.
         
         Args:
             connector_name: Name of the connector
@@ -27,48 +36,21 @@ class SAPHANATransformer(QueryBasedTransformer):
             os.path.dirname(__file__), "templates"
         )
 
-        # Define SAP HANA specific assets to be included alongside standard ones
-        hana_assets = [
-            "CALCULATION-VIEW",
-            "CALCULATION-VIEW-COLUMN",
-            "CALC-VIEW-LINEAGE",
-            "CALC-VIEW-COLUMN-LINEAGE"
+        # Define assets to be included
+        template_assets = [
+            # Standard asset types
+            "TABLE", "COLUMN", "DATABASE", "SCHEMA", "VIEW", "PROCEDURE",
+            # SAP HANA specific assets
+            "CALCULATION-VIEW", "CALCULATION-VIEW-COLUMN",
+            # Lineage assets
+            "LINEAGE", "COLUMN-LINEAGE"
         ]
         
-        # Update entity_class_definitions with both standard and custom templates
+        # Update entity_class_definitions with templates
         updated_templates = get_yaml_query_template_path_mappings(
             custom_templates_path=custom_templates_path,
-            assets=[
-                # Standard asset types
-                "TABLE", "COLUMN", "DATABASE", "SCHEMA", 
-                "VIEW", "PROCEDURE",
-                # SAP HANA specific asset types
-                *hana_assets
-            ]
+            assets=template_assets
         )
         self.entity_class_definitions.update(updated_templates)
         
-        logger.info(f"Registered SAP HANA templates: {list(updated_templates.keys())}")
-        
-    async def transform_with_preprocessing(
-        self, 
-        typename: str, 
-        df: daft.DataFrame, 
-        preprocessing_func: Optional[callable] = None, 
-        **kwargs: Any
-    ) -> daft.DataFrame:
-        """Transform data with optional preprocessing.
-        
-        Args:
-            typename: The type name for transformation
-            df: Input DataFrame
-            preprocessing_func: Optional function to preprocess data
-            **kwargs: Additional arguments for preprocessing
-            
-        Returns:
-            daft.DataFrame: Transformed DataFrame
-        """
-        if preprocessing_func:
-            df = preprocessing_func(df, **kwargs)
-            
-        return await self.transform_metadata(typename, df) 
+        logger.info(f"Registered SAP HANA templates: {list(updated_templates.keys())}") 

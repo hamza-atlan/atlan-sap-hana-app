@@ -1,102 +1,68 @@
 columns:
   - name: typeName
     source_query: "'Column'"
-
+    
   - name: attributes.name
     source_query: COLUMN_NAME
     
   - name: attributes.qualifiedName
-    source_query: |
-      case 
-        when PACKAGE_ID is not null then concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', TABLE_NAME, '/', COLUMN_NAME)
-        else concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME, '/', COLUMN_NAME)
-      end
-    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, TABLE_NAME, COLUMN_NAME]
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME, '/', COLUMN_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME, COLUMN_NAME]
     
-  - name: attributes.connectorName
-    source_query: "'sap-hana'"
+  - name: attributes.description
+    source_query: REMARKS
     
-  - name: attributes.connectionQualifiedName
-    source_query: connection_qualified_name
+  - name: attributes.ordinalPosition
+    source_query: ORDINAL_POSITION
     
   - name: attributes.dataType
     source_query: TYPE_NAME
     
-  - name: attributes.description
-    source_query: REMARKS
+  - name: attributes.isPrimaryKey
+    source_query: "CONSTRAINT_TYPE = 'PRIMARY KEY'"
+    
+  - name: attributes.isForeignKey
+    source_query: "CONSTRAINT_TYPE = 'FOREIGN KEY'"
+    
+  - name: attributes.referencedColumnQualifiedName
+    source_query: "case when CONSTRAINT_TYPE = 'FOREIGN KEY' and REFERENCED_COLUMN_NAME is not null then concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', REFERENCED_TABLE_NAME, '/', REFERENCED_COLUMN_NAME) else null end"
+    source_columns: [CONSTRAINT_TYPE, REFERENCED_COLUMN_NAME, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME]
     
   - name: attributes.defaultValue
     source_query: COLUMN_DEFAULT
     
   - name: attributes.isNullable
-    source_query: case when IS_NULLABLE = 'YES' then true else false end
-    source_columns: [IS_NULLABLE]
+    source_query: "IS_NULLABLE = 'YES'"
+    
+  - name: attributes.numericPrecision
+    source_query: PRECISION
+    
+  - name: attributes.numericScale
+    source_query: NUMERIC_SCALE
     
   - name: attributes.maxLength
     source_query: CHARACTER_MAXIMUM_LENGTH
-    source_columns: [CHARACTER_MAXIMUM_LENGTH]
-    null_values: ['null']
     
-  - name: attributes.precision
-    source_query: NUMERIC_SCALE
-    source_columns: [NUMERIC_SCALE]
-    null_values: ['null']
+  - name: attributes.databaseName
+    source_query: DATABASE_NAME
     
-  - name: attributes.isPrimary
-    source_query: case when CONSTRAINT_TYPE = 'PRIMARY KEY' then true else false end
-    source_columns: [CONSTRAINT_TYPE]
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
+    source_columns: [connection_qualified_name, TABLE_CAT]
     
-  - name: attributes.isForeign
-    source_query: case when REFERENCED_COLUMN_NAME is not null then true else false end
-    source_columns: [REFERENCED_COLUMN_NAME]
+  - name: attributes.schemaName
+    source_query: TABLE_SCHEM
     
-  - name: attributes.position
-    source_query: ORDINAL_POSITION
+  - name: attributes.schemaQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM]
     
   - name: attributes.tableName
-    source_query: case when TABLE_TYPE = 'VIEW' then null else TABLE_NAME end
-    source_columns: [TABLE_TYPE, TABLE_NAME]
+    source_query: TABLE_NAME
     
   - name: attributes.tableQualifiedName
-    source_query: case when TABLE_TYPE = 'VIEW' then null else concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME) end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
     
-  - name: attributes.table
-    source_query: |
-      case when TABLE_TYPE = 'VIEW' then null else 
-        concat('{"typeName":"Table","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME, '"}}')
-      end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
-    
-  - name: attributes.viewName
-    source_query: case when TABLE_TYPE = 'VIEW' then TABLE_NAME else null end
-    source_columns: [TABLE_TYPE, TABLE_NAME]
-    
-  - name: attributes.viewQualifiedName
-    source_query: case when TABLE_TYPE = 'VIEW' then concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME) else null end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
-    
-  - name: attributes.view
-    source_query: |
-      case when TABLE_TYPE = 'VIEW' then 
-        concat('{"typeName":"View","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME, '"}}')
-      else null end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
-    
-  - name: attributes.calculationViewName
-    source_query: case when TABLE_TYPE = 'CalculationView' then TABLE_NAME else null end
-    source_columns: [TABLE_TYPE, TABLE_NAME]
-    
-  - name: attributes.calculationViewQualifiedName
-    source_query: |
-      case when TABLE_TYPE = 'CalculationView' then 
-        concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', TABLE_NAME)
-      else null end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, TABLE_NAME]
-    
-  - name: attributes.calculationView
-    source_query: |
-      case when TABLE_TYPE = 'CalculationView' then 
-        concat('{"typeName":"CalculationView","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', TABLE_NAME, '"}}')
-      else null end
-    source_columns: [TABLE_TYPE, connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, TABLE_NAME] 
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name 

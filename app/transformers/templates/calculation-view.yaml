@@ -1,23 +1,25 @@
 columns:
   - name: typeName
     source_query: "'CalculationView'"
-
+    
   - name: attributes.name
     source_query: VIEW_NAME
     
   - name: attributes.qualifiedName
-    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', PACKAGE_ID, '/', VIEW_NAME)
-    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, PACKAGE_ID, VIEW_NAME]
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', VIEW_NAME)
+    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, VIEW_NAME]
     
-  - name: attributes.connectorName
-    source_query: "'sap-hana'"
+  - name: attributes.description
+    source_query: REMARKS
     
-  - name: attributes.connectionQualifiedName
-    source_query: connection_qualified_name
+  - name: attributes.owner
+    source_query: CREATED_BY
     
-  - name: attributes.databaseQualifiedName
-    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
-    source_columns: [connection_qualified_name, TABLE_CAT]
+  - name: attributes.createTime
+    source_query: CREATE_TIME
+    
+  - name: attributes.schemaName
+    source_query: TABLE_SCHEM
     
   - name: attributes.schemaQualifiedName
     source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM)
@@ -26,21 +28,15 @@ columns:
   - name: attributes.databaseName
     source_query: TABLE_CAT
     
-  - name: attributes.schemaName
-    source_query: TABLE_SCHEM
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
+    source_columns: [connection_qualified_name, TABLE_CAT]
     
-  - name: attributes.calculationViewActivatedBy
-    source_query: ACTIVATED_BY
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
     
-  - name: attributes.calculationViewActivatedAt
-    source_query: ACTIVATED_AT
+  - name: attributes.viewDefinition
+    source_query: ROUTINE_DEFINITION
     
-  - name: attributes.calculationViewVersionId
-    source_query: VERSION_ID
-    
-  - name: attributes.calculationViewPackageId
-    source_query: PACKAGE_ID
-    
-  - name: attributes.schema
-    source_query: concat('{"typeName":"Schema","uniqueAttributes":{"qualifiedName":"', connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '"}}')
-    source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM] 
+  - name: attributes.packageId
+    source_query: PACKAGE_ID 

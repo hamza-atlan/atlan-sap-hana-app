@@ -1,56 +1,98 @@
-# SAP HANA Metadata Extractor
+# SAP HANA Metadata Extraction Connector
 
-An Application SDK implementation for extracting metadata from SAP HANA databases, including calculation views and lineage.
+This application extracts metadata from SAP HANA databases including:
+
+- Databases
+- Schemas
+- Tables
+- Views
+- Columns
+- Stored Procedures
+- Calculation Views (with lineage)
 
 ## Features
 
-- Extracts standard database objects (tables, views, columns, schemas, procedures)
-- Extracts SAP HANA calculation views and their columns
-- Extracts lineage between calculation views and their source tables/views
-- Extracts column-level lineage for calculation views
+- Extracts standard database objects (tables, views, columns, etc.)
+- Extracts SAP HANA specific objects like Calculation Views
+- Generates lineage information from calculation views
+- Supports SAP HANA 2.0 and above
 
-## Requirements
+## Prerequisites
 
-- Python 3.11+
-- SAP HANA database (version 2.0+)
-- SAP HANA Python driver (hdbcli)
-- SQLAlchemy HANA dialect
-- Application SDK
+- Python 3.11 or higher
+- SAP HANA ODBC/JDBC drivers
+- Access to a SAP HANA database
 
-## Setup
+## Installation
 
-1. Install dependencies:
+1. Clone the repository:
 
 ```bash
-uv pip install -e .
+git clone https://github.com/your-org/sap-hana-connector.git
+cd sap-hana-connector
 ```
 
-2. Configure environment variables:
+2. Create and activate a virtual environment:
 
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-3. Run the application:
+3. Install dependencies:
+
+```bash
+pip install -e .
+```
+
+## Configuration
+
+You can configure the application using environment variables or through the API:
+
+```bash
+# Required
+export DATABASE_HOST=your-sap-hana-host
+export DATABASE_PORT=30015
+export DATABASE_USERNAME=your-username
+export DATABASE_PASSWORD=your-password
+
+# Optional
+export DATABASE_ENCRYPT=true
+export DATABASE_SSL_VALIDATE_CERT=false
+```
+
+## Running the Application
+
+Start the application with:
 
 ```bash
 python main.py
 ```
 
+By default, the server starts on http://localhost:8000.
+
+## API Endpoints
+
+The following API endpoints are available:
+
+- `/workflows/v1/auth` - Test authentication
+- `/workflows/v1/check` - Run preflight checks
+- `/workflows/v1/start` - Start extraction workflow
+
 ## Development
 
-To set up a development environment:
+For development, install additional dependencies:
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev,test]"
+pip install -e ".[dev,test]"
+```
+
+Run tests with:
+
+```bash
+pytest
 ```
 
 ## License
 
-Apache 2.0
-```
-
-</rewritten_file>
+Apache 2.0 

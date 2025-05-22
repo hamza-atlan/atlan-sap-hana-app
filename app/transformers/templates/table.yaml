@@ -1,7 +1,7 @@
 columns:
   - name: typeName
     source_query: "'Table'"
-
+    
   - name: attributes.name
     source_query: TABLE_NAME
     
@@ -9,15 +9,17 @@ columns:
     source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM, '/', TABLE_NAME)
     source_columns: [connection_qualified_name, TABLE_CAT, TABLE_SCHEM, TABLE_NAME]
     
-  - name: attributes.connectorName
-    source_query: "'sap-hana'"
+  - name: attributes.description
+    source_query: REMARKS
     
-  - name: attributes.connectionQualifiedName
-    source_query: connection_qualified_name
+  - name: attributes.owner
+    source_query: TABLE_SCHEM
     
-  - name: attributes.databaseQualifiedName
-    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
-    source_columns: [connection_qualified_name, TABLE_CAT]
+  - name: attributes.createTime
+    source_query: CREATE_TIME
+    
+  - name: attributes.schemaName
+    source_query: TABLE_SCHEM
     
   - name: attributes.schemaQualifiedName
     source_query: concat(connection_qualified_name, '/', TABLE_CAT, '/', TABLE_SCHEM)
@@ -26,34 +28,24 @@ columns:
   - name: attributes.databaseName
     source_query: TABLE_CAT
     
-  - name: attributes.schemaName
-    source_query: TABLE_SCHEM
+  - name: attributes.databaseQualifiedName
+    source_query: concat(connection_qualified_name, '/', TABLE_CAT)
+    source_columns: [connection_qualified_name, TABLE_CAT]
     
-  - name: attributes.description
-    source_query: REMARKS
-    
-  - name: attributes.tableType
-    source_query: "'Table'"
-    
-  - name: attributes.isPartitioned
-    source_query: case when HAS_PARTITIONS = 'TRUE' then true else false end
-    source_columns: [HAS_PARTITIONS]
-    
-  - name: attributes.isTemporary
-    source_query: case when IS_TEMPORARY = 'TRUE' then true else false end
-    source_columns: [IS_TEMPORARY]
-    
-  - name: attributes.sourceCreatedAt
-    source_query: CREATE_TIME
-    source_columns: [CREATE_TIME]
-    null_values: ['null']
+  - name: attributes.connectionQualifiedName
+    source_query: connection_qualified_name
     
   - name: attributes.rowCount
     source_query: ROW_COUNT
-    source_columns: [ROW_COUNT]
-    null_values: ['null']
     
-  - name: attributes.sizeBytes
-    source_query: BYTES
-    source_columns: [BYTES]
-    null_values: ['null'] 
+  - name: attributes.tableId
+    source_query: TABLE_OID
+    
+  - name: attributes.isTemporary
+    source_query: IS_TEMPORARY
+    
+  - name: attributes.isPartitioned
+    source_query: HAS_PARTITIONS
+    
+  - name: attributes.byteSize
+    source_query: BYTES 
